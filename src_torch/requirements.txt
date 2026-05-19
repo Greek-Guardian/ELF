@@ -1,0 +1,32 @@
+# ELF PyTorch implementation requirements
+# Target platform: H800 (sm_90, CUDA 12), development: macOS (CPU)
+# Install: pip install -r src_torch/requirements.txt
+
+# Core deep learning
+torch>=2.4.0          # RMSNorm built-in, SDPA (FlashAttention-2 on sm_90)
+torchvision>=0.19.0   # Optional, for future vision utilities
+
+# HuggingFace stack (T5 encoder + datasets + tokenizer)
+transformers>=4.41.2,<4.45.0
+datasets>=2.19.0
+huggingface-hub>=0.23.0
+
+# Numerics / arrays
+numpy>=1.26.4,<2.0.0
+scipy>=1.12.0
+einops>=0.7.0
+
+# Configuration
+PyYAML>=6.0.1
+
+# Logging / progress
+tqdm>=4.66.0
+wandb==0.16.6
+
+# Evaluation metrics
+sacrebleu>=2.4.0
+rouge-score>=0.1.2
+
+# Misc
+requests>=2.31.0
+pillow>=9.5.0

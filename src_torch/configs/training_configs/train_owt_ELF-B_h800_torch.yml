@@ -1,0 +1,76 @@
+# ELF-B training on a single 8×H800 node (PyTorch/DDP)
+# Effective batch = 128 * 8 GPUs * 4 grad_accum = 4096 ≈ paper's 512×8=4096 TPU effective batch
+# blr = 5e-5  →  lr = 5e-5 * 4096 / 256 = 8e-4
+
+model: ELF-B
+encoder_model_name: t5-small
+
+# Dataset (replace with your actual HF repo id or local path)
+data_path: embedded-language-flows/openwebtext-tokenized-t5
+max_length: 128
+pad_token: eos
+
+# Encoder latent normalisation (keep in sync with data prep)
+latent_mean: 0.0
+latent_std: 1.0
+
+# Model architecture
+bottleneck_dim: 128
+num_time_tokens: 4
+num_self_cond_cfg_tokens: 4
+num_model_mode_tokens: 4
+attn_dropout: 0.0
+proj_dropout: 0.0
+
+# Denoiser objective
+denoiser_p_mean: 0.8
+denoiser_p_std: 0.8
+denoiser_noise_scale: 1.0
+t_eps: 0.05
+time_schedule: logit_normal
+
+# Decoder objective
+decoder_prob: 0.5
+decoder_noise_scale: 1.0
+decoder_p_mean: 0.8
+decoder_p_std: 0.8
+
+# Conditioning / CFG
+self_cond_prob: 0.5
+label_drop_prob: 0.0
+self_cond_cfg_min: 0.5
+self_cond_cfg_max: 5.0
+
+# Training
+epochs: 200
+warmup_steps: 5000
+global_batch_size: 128      # per-GPU batch (DDP will multiply by nproc)
+grad_accum_steps: 4
+blr: 5.0e-5
+lr_schedule: cosine
+min_lr: 1.0e-6
+optimizer: muon
+weight_decay: 0.0
+adam_b1: 0.9
+adam_b2: 0.95
+ema_decay1: 0.9999
+
+# Logging & checkpointing
+log_freq: 100
+eval_freq: 10
+save_freq: 1
+output_dir: ./output_dir
+num_workers: 4
+
+# Evaluation sampling (uncomment / adjust as needed)
+# sampling_configs_path: configs/sampling_configs/uncond_sampling_configs.yml
+num_samples: 100
+online_eval: true
+eval_ppl_model: gpt2-large
+eval_ppl_batch_size: 32
+eval_ppl_max_length: 1024
+
+# Wandb (optional)
+use_wandb: false
+wandb_project: ELF-torch
+wandb_run_name: elf-b-owt-h800
