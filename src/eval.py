@@ -8,12 +8,15 @@ import logging
 import os
 import sys
 
-# Initialize JAX distributed BEFORE importing other JAX modules
+# Initialize JAX distributed BEFORE importing other JAX modules.
+# Set ELF_SINGLE_HOST=1 (set by run_h800.sh) to skip cluster auto-detection,
+# which otherwise tries to query the K8s API and can hang behind a proxy.
 import jax
-try:
-    jax.distributed.initialize()
-except (RuntimeError, ValueError):
-    pass  # Single-host run, or already initialized.
+if not os.environ.get("ELF_SINGLE_HOST"):
+    try:
+        jax.distributed.initialize()
+    except Exception as e:  # noqa: BLE001 — multi-host setups vary; single-host runs should not crash.
+        print(f"[jax.distributed.initialize skipped] {type(e).__name__}: {e}", flush=True)
 
 # Ensure repo root on sys.path so imports work when run as a script
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -73,6 +76,17 @@ def main():
     if args.config_override:
         config = apply_config_overrides(config, args.config_override)
         log_for_0(f"Applied {len(args.config_override)} config override(s)")
+
+    # Initialize wandb if enabled and not already initialized
+    if config.use_wandb and jax.process_index() == 0:
+        import wandb
+        if wandb.run is None:
+            wandb.init(
+                project=config.wandb_project, entity=config.wandb_entity,
+                name=config.get("wandb_run_name", None), dir="/tmp",
+                settings=wandb.Settings(start_method="thread"),
+            )
+            log_for_0(f"Wandb initialized: {wandb.run.url}")
 
     num_devices = jax.device_count()
     num_local_devices = jax.local_device_count()

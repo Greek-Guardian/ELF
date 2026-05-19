@@ -1,6 +1,8 @@
---find-links https://storage.googleapis.com/jax-releases/libtpu_releases.html
+--find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 setuptools==69.5.1
-jax[tpu]==0.4.38
+# H800 (Hopper, sm_90) requires CUDA 12 + cuDNN 8.9/9.x. The cuda12_pip extra
+# pulls nvidia-* runtime wheels, so the host only needs a recent NVIDIA driver.
+jax[cuda12_pip]==0.4.38
 jaxlib==0.4.38
 flax==0.10.2
 orbax-checkpoint==0.5.23

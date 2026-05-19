@@ -1,0 +1,79 @@
+# ELF-B unconditional OWT — tuned for a single 8x H800 (80GB) node.
+#
+# Differences vs train_owt_ELF-B.yml:
+#   - global_batch_size 512 -> 128 (8 GPUs * 16/GPU at max_length=1024 fits comfortably in 80GB)
+#   - grad_accum_steps 1 -> 4 to recover the effective batch size of 512 used in the paper.
+#     blr * (effective_batch / 256) keeps the LR identical to the v5p-64 setup.
+#   - Local paths under assets_download/ (populated by download_assets.py).
+#
+# If you have OOM, halve global_batch_size and double grad_accum_steps.
+# If you have headroom, raise global_batch_size first (it's faster than grad accum).
+
+# Dataset
+data_path: "../assets_download/datasets/openwebtext-t5"
+max_length: 1024
+
+# Encoder
+encoder_model_name: t5-small
+encoder_checkpoint: "../assets_download/encoder/t5_small_encoder_jax.pkl"
+latent_mean: 0.0
+latent_std: 0.2
+
+# Model architecture
+model: ELF-B
+bottleneck_dim: 128
+num_time_tokens: 4
+num_self_cond_cfg_tokens: 4
+num_model_mode_tokens: 4
+
+# Denoiser objective
+denoiser_p_mean: -1.5
+denoiser_p_std: 0.8
+denoiser_noise_scale: 2.0
+t_eps: 0.05
+time_schedule: "logit_normal"
+
+# Decoder objective
+decoder_prob: 0.2
+decoder_noise_scale: 5.0
+decoder_p_mean: 0.8
+decoder_p_std: 0.8
+
+# Conditioning / CFG
+self_cond_prob: 0.5
+
+# Training (optimizer + schedule)
+epochs: 5
+global_batch_size: 128
+grad_accum_steps: 4          # effective batch = 128 * 4 = 512 (matches paper)
+blr: 0.001                   # lr = blr * effective_batch / 256 = 0.002
+weight_decay: 0.0
+warmup_epochs: 0.5
+warmup_steps: -1
+optimizer: muon
+
+# EMA
+ema_decay1: 0.9999
+
+# Sampling
+sampling_configs_path: "configs/sampling_configs/uncond_sampling_configs.yml"
+num_samples: 1000
+
+# Logging & Checkpointing
+log_freq: 100
+save_freq: 1
+eval_freq: 1
+
+# Output
+output_dir: "outputs/elf_b-owt-h800"
+hf_repo_id: null
+resume: null
+
+# Wandb
+use_wandb: true
+wandb_project: elf
+wandb_entity: null
+wandb_run_name: elf_b-owt-h800
+
+# Misc
+seed: 42
